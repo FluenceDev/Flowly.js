@@ -85,9 +85,12 @@ class NodeUI {
 
         interact(this.element)
             .draggable({
-                preventDefault: 'always',
+                preventDefault: 'auto',
                 ignoreFrom: '.flowly-node-port',
                 listeners: {
+                    start: (event) => {
+                        this.element.classList.add('flowly-node-dragging');
+                    },
                     move: (event) => {
                         const { zoom } = this.getCanvasOffsetAndZoom();
                         this.node.x += event.dx / zoom;
@@ -96,6 +99,7 @@ class NodeUI {
                         this.updatePosition();
                     },
                     end: (event) => {
+                        this.element.classList.remove('flowly-node-dragging');
                     }
                 }
             });
