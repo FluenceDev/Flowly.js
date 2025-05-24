@@ -1,6 +1,43 @@
 /* public/style.css */
 
-/* Reset básico e configuração do body para flexbox */
+/*
+  --flowly-node-bg: Cor de fundo do node
+  --flowly-node-border: Cor da borda do node
+  --flowly-node-radius: Raio da borda do node
+  --flowly-node-header-bg: Cor de fundo do header do node
+  --flowly-node-header-color: Cor do texto do header
+  --flowly-node-port-bg: Cor das portas
+  --flowly-connection-color: Cor das conexões
+  --flowly-selected-color: Cor de seleção (node/conexão)
+*/
+:root {
+    --flowly-node-bg: #fff;
+    --flowly-node-border: #aaa;
+    --flowly-node-radius: 8px;
+    --flowly-node-header-bg: #eee;
+    --flowly-node-header-color: #222;
+    --flowly-node-port-bg: #999;
+    --flowly-connection-color: #555;
+    --flowly-selected-color: #3498db;
+    /* Personalização das portas */
+    --flowly-input-port-width: 10px;
+    --flowly-input-port-height: 30px;
+    --flowly-input-port-radius: 10px;
+    --flowly-input-port-margin-left: -15px;
+    --flowly-output-port-width: 25px;
+    --flowly-output-port-height: 25px;
+    --flowly-output-port-radius: 50%;
+    --flowly-output-port-margin-right: -23px;
+    /* Variáveis para o fundo do canvas */
+    --flowly-background-type: 'solid'; /* Pode ser 'solid' ou 'dots' via JS */
+    --flowly-background-color: #f8f8f8; /* Cor de fundo principal */
+    
+    /* Variáveis para o padrão de pontos (usadas se --flowly-background-type for 'dots') */
+    --flowly-dot-color: #ccc;
+    --flowly-dot-size: 1px;
+    --flowly-dot-spacing: 20px;
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -23,22 +60,17 @@ h1 {
     flex-grow: 1;
     max-width: 900px;
     min-height: 400px;
-
     position: relative;
     overflow: hidden;
-    background-color: #f8f8f8;
+    background-color: var(--flowly-background-color);
     margin-bottom: 20px;
-
     touch-action: none;
     cursor: grab;
-    cursor: -webkit-grab;
-    cursor: -moz-grab;
+    border-radius: 0px;
 }
 
 .flowly-container.panning {
     cursor: grabbing;
-    cursor: -webkit-grabbing;
-    cursor: -moz-grabbing;
 }
 
 button#add-node-btn {
@@ -46,12 +78,16 @@ button#add-node-btn {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
+    background: #fff;
+    color: #222;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
 
 .flowly-node {
-    background-color: #fff;
-    border: 1px solid #aaa;
-    border-radius: 8px;
+    background-color: var(--flowly-node-bg);
+    border: 1px solid var(--flowly-node-border);
+    border-radius: var(--flowly-node-radius);
     min-width: 150px;
     min-height: 80px;
     z-index: 10;
@@ -63,19 +99,14 @@ button#add-node-btn {
 }
 
 .flowly-node-header {
-    background-color: #eee;
+    background-color: var(--flowly-node-header-bg);
+    color: var(--flowly-node-header-color);
     padding: 8px;
     font-weight: bold;
     border-bottom: 1px solid #ddd;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+    border-top-left-radius: var(--flowly-node-radius);
+    border-top-right-radius: var(--flowly-node-radius);
     user-select: none;
-    -webkit-tap-highlight-color: transparent;
 }
 
 .flowly-node-body {
@@ -83,43 +114,96 @@ button#add-node-btn {
     justify-content: space-between;
     padding: 10px;
     flex-grow: 1;
+    position: relative;
+}
+
+.flowly-node-custom-content-wrapper {
+    position: relative;
+    flex-grow: 1;
+    padding: 5px;
+    overflow: auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flowly-node-default-content {
+    font-style: italic;
+    color: #777;
+    font-size: 0.9em;
 }
 
 .flowly-node-port-container {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 15px;
+    padding: 5px 0;
 }
 
 .flowly-node-port {
-    width: 15px;
-    height: 15px;
-    background-color: #666;
-    border-radius: 50%;
+    background-color: var(--flowly-node-port-bg);
     cursor: crosshair;
     box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+}
 
-    padding: 8px;
-    margin: -8px -18px;
+.flowly-node-port::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
 }
 
 .flowly-node-input-ports .flowly-node-port {
     align-self: flex-start;
+    margin-left: var(--flowly-input-port-margin-left);
+    width: var(--flowly-input-port-width);
+    height: var(--flowly-input-port-height);
+    border-radius: var(--flowly-input-port-radius);
 }
 
 .flowly-node-output-ports .flowly-node-port {
     align-self: flex-end;
+    margin-right: var(--flowly-output-port-margin-right);
+    width: var(--flowly-output-port-width);
+    height: var(--flowly-output-port-height);
+    border-radius: var(--flowly-output-port-radius);
+}
+
+.flowly-port-name {
+    position: absolute;
+    font-size: 12px;
+    white-space: nowrap;
+    color: #333;
+    user-select: none;
+}
+
+.flowly-node-input-ports .flowly-port-name {
+    left: 20px;
+}
+
+.flowly-node-output-ports .flowly-port-name {
+    right: 20px;
 }
 
 .flowly-connection {
     fill: none;
-    stroke: #555;
+    stroke: var(--flowly-connection-color);
     stroke-width: 2px;
 }
 .flowly-connection.selected {
-    stroke: #e74c3c; /* Uma cor vermelha para destacar */
-    stroke-width: 3; /* Aumenta a largura para ser mais visível */
-    filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.7)); /* Adiciona uma sombra para realçar */
+    stroke: var(--flowly-selected-color);
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 5px var(--flowly-selected-color, #3498db));
 }
 
 .flowly-temp-connection {
@@ -134,6 +218,18 @@ button#add-node-btn {
 }
 
 .flowly-node.selected {
-    border: 2px solid #3498db;
-    box-shadow: 0px 0px 15px rgba(52, 152, 219, 0.7);
+    border: 2px solid var(--flowly-selected-color);
+    box-shadow: 0px 0px 15px var(--flowly-selected-color, #3498db);
+}
+
+.flowly-connection-hitbox {
+    stroke: transparent;
+    stroke-width: 16px;
+    pointer-events: stroke;
+}
+
+/* Classe para aplicar o padrão de pontos */
+.flowly-background-dots {
+    background-image: radial-gradient(var(--flowly-dot-color) var(--flowly-dot-size), transparent var(--flowly-dot-size));
+    background-size: var(--flowly-dot-spacing) var(--flowly-dot-spacing);
 }

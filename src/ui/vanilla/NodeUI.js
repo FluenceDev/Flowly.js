@@ -16,17 +16,48 @@ class NodeUI {
         nodeDiv.setAttribute('data-node-id', this.node.id);
         nodeDiv.style.touchAction = 'none';
 
+        if (this.node.theme) {
+            for (const key in this.node.theme) {
+                nodeDiv.style.setProperty(key, this.node.theme[key]);
+            }
+        }
+
+        const inputPortHtml = this.node.input ? `
+            <div class="flowly-node-port flowly-node-input-port" 
+                data-port-type="input" 
+                data-port-id="${this.node.id}-${this.node.input.id}"
+                data-port-name="${this.node.input.name}">
+            </div>
+        ` : '';
+
+        const outputPortHtml = this.node.output ? `
+            <div class="flowly-node-port flowly-node-output-port" 
+                data-port-type="output" 
+                data-port-id="${this.node.id}-${this.node.output.id}"
+                data-port-name="${this.node.output.name}">
+            </div>
+        ` : '';
+
+        const customContentHtml = this.node.htmlContent ? this.node.htmlContent : '<div class="flowly-node-default-content"></div>';
+
+        const headerHtml = this.node.showHeader ? 
+            `<div class="flowly-node-header">${this.node.data.name || `Node ${this.node.id}`}</div>` : '';
+
         nodeDiv.innerHTML = `
-            <div class="flowly-node-header">${this.node.data.name || `Node ${this.node.id}`}</div>
+            ${headerHtml}
             <div class="flowly-node-body">
                 <div class="flowly-node-port-container flowly-node-input-ports">
-                    <div class="flowly-node-port flowly-node-input-port" data-port-type="input" data-port-id="${this.node.id}-input"></div>
+                    ${inputPortHtml}
+                </div>
+                <div class="flowly-node-custom-content-wrapper">
+                    ${customContentHtml} 
                 </div>
                 <div class="flowly-node-port-container flowly-node-output-ports">
-                    <div class="flowly-node-port flowly-node-output-port" data-port-type="output" data-port-id="${this.node.id}-output"></div>
+                    ${outputPortHtml}
                 </div>
             </div>
         `;
+
         return nodeDiv;
     }
 

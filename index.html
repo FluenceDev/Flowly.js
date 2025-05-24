@@ -10,19 +10,66 @@
 <h1>Flowly.js Demo</h1>
 <div id="flowly-container" class="flowly-container"></div>
 
-<button id="add-node-btn">Add Node</button>
+
+<div style="display: flex; gap: 10px; margin-top: 20px;">
+  <button id="add-node-btn">Add Node</button>
+  <button id="atualizar-node">exibir título</button>
+  <button id="atualizar-node2">Atualizar título</button>
+  <button id="atualizar-node3">Atualizar content</button>
+  <button id="get-node">Get node</button>
+</div>
 
 <script type="module" src="/src/main.js"></script>
 <script type="module">
   import Flowly from './src/main.js';
 
-  const flowly = new Flowly('flowly-container');
+  const flowly = new Flowly('flowly-container', {
+    background: {
+        type: 'dots',
+        color: '#333',
+        dotColor: '#666',
+        dotSize: 1,
+        dotSpacing: 25
+    }
+  });
 
 
   document.getElementById('add-node-btn').addEventListener('click', () => {
-    const x = Math.random() * 500; // Posição aleatória para demonstração
-    const y = Math.random() * 300;
-    flowly.addNode(x, y, { name: `Node ${flowly.core.nextNodeId}` });
+    const posX = Math.random() * 500;
+    const posY = Math.random() * 300;
+    
+    flowly.addNode({
+      posX,
+      posY,
+      name: 'Node Exemplo',
+      data: {
+        createdAt: new Date().toISOString()
+      },
+      input: {
+        name: 'Entrada'
+      },
+      output: {
+        name: 'Saída'
+      },
+      showHeader: true
+    });
+  });
+
+  document.getElementById('atualizar-node').addEventListener('click', () => {
+    flowly.updateNode('node-1', {showHeader: true});
+  });
+
+  document.getElementById('atualizar-node2').addEventListener('click', () => {
+    flowly.updateNode('node-1', {name: "balburdias"});
+  });
+  document.getElementById('atualizar-node3').addEventListener('click', () => {
+    flowly.updateNode('node-1', {htmlContent: '<div>Conteúdo HTML atualizado</div>'});
+  });
+
+  document.getElementById('get-node').addEventListener('click', () => {
+   let node = flowly.getById('node-1');
+
+   console.log(node);
   });
 </script>
 </body>

@@ -25,7 +25,7 @@ const MAX_ZOOM = 2.0;
 const PASTE_OFFSET = 20;
 
 class FlowlyVanillaUI {
-    constructor(containerId, core) {
+    constructor(containerId, core, initialConfig = {}) {
         this.container = document.getElementById(containerId);
         if (!this.container) {
             throw new Error(`Container with ID '${containerId}' not found.`);
@@ -62,6 +62,14 @@ class FlowlyVanillaUI {
         this.lastMouseY = 0;
 
         this.container.classList.add('flowly-container');
+
+        try {
+            this.initialBackgroundColor = getComputedStyle(this.container).backgroundColor || '#f8f8f8';
+        } catch (e) {
+            this.initialBackgroundColor = '#f8f8f8';
+        }
+        
+        this.setBackground(initialConfig.background || {});
 
         this.setupCoreListeners();
         this.setupInteractions();
@@ -131,7 +139,7 @@ class FlowlyVanillaUI {
     }
 
     addConnectionUI(connection) {
-        const connectionUI = new ConnectionUI(connection, this.svgContainer, this.getPortWorldPosition.bind(this), this.getSimpleBezierPath.bind(this));
+        const connectionUI = new ConnectionUI(connection, this.svgContainer, this.getPortWorldPosition.bind(this), this.getSimpleBezierPath.bind(this), this);
         this.connectionUIs.set(connection.id, connectionUI);
     }
 
@@ -497,8 +505,12 @@ class FlowlyVanillaUI {
                     const nodeToCopy = this.core.getNode(this.selectedNodeId);
                     if (nodeToCopy) {
                         this.copiedNodeData = {
-                            ...JSON.parse(JSON.stringify(nodeToCopy)),
-                            id: undefined
+                            data: JSON.parse(JSON.stringify(nodeToCopy.data || {})),
+                            htmlContent: nodeToCopy.htmlContent,
+                            showHeader: nodeToCopy.showHeader,
+                            input: nodeToCopy.input ? JSON.parse(JSON.stringify(nodeToCopy.input)) : null,
+                            output: nodeToCopy.output ? JSON.parse(JSON.stringify(nodeToCopy.output)) : null,
+                            theme: nodeToCopy.theme ? JSON.parse(JSON.stringify(nodeToCopy.theme)) : null,
                         };
                     }
                 }
@@ -507,29 +519,28 @@ class FlowlyVanillaUI {
             if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 e.preventDefault();
                 if (this.copiedNodeData) {
-                    let pasteXClient = this.lastMouseX;
-                    let pasteYClient = this.lastMouseY;
+                    const pasteXClient = this.lastMouseX;
+                    const pasteYClient = this.lastMouseY;
 
                     const containerRect = this.container.getBoundingClientRect();
-
                     const mouseXRelativeToContainer = pasteXClient - containerRect.left;
                     const mouseYRelativeToContainer = pasteYClient - containerRect.top;
 
                     const worldX = (mouseXRelativeToContainer - this.canvasOffsetX) / this.zoom;
                     const worldY = (mouseYRelativeToContainer - this.canvasOffsetY) / this.zoom;
 
-                    const newNodeX = worldX + PASTE_OFFSET;
-                    const newNodeY = worldY + PASTE_OFFSET;
+                    const nodeConfig = {
+                        posX: worldX + PASTE_OFFSET,
+                        posY: worldY + PASTE_OFFSET,
+                        data: this.copiedNodeData.data,
+                        htmlContent: this.copiedNodeData.htmlContent,
+                        showHeader: this.copiedNodeData.showHeader,
+                        input: this.copiedNodeData.input,
+                        output: this.copiedNodeData.output,
+                        theme: this.copiedNodeData.theme
+                    };
 
-                    const newData = this.copiedNodeData.data ? { ...this.copiedNodeData.data } : {};
-
-                    const pastedNode = this.core.addNode(
-                        newNodeX,
-                        newNodeY,
-                        newData,
-                        this.copiedNodeData.inputs || [],
-                        this.copiedNodeData.outputs || []
-                    );
+                    this.core.addNode(nodeConfig);
                 }
             }
         });
@@ -553,8 +564,34 @@ class FlowlyVanillaUI {
     renderInitial() {
         this.core.getNodes().forEach(node => this.addNodeUI(node));
         requestAnimationFrame(() => {
-            this.core.getConnections().forEach(connection => this.addConnectionUI(connection));
+            this.core.getAllConnections().forEach(connection => this.addConnectionUI(connection));
         });
+    }
+
+    setBackground(options = {}) {
+        const defaults = {
+            type: 'solid',
+            color: this.initialBackgroundColor,
+            dotColor: '#ccc',
+            dotSize: 1,
+            dotSpacing: 20
+        };
+
+        const config = { ...defaults, ...options };
+
+        this.container.style.backgroundColor = config.color;
+
+        if (config.type === 'dots') {
+            this.container.classList.add('flowly-background-dots');
+            this.container.style.setProperty('--flowly-dot-color', config.dotColor);
+            this.container.style.setProperty('--flowly-dot-size', `${config.dotSize}px`);
+            this.container.style.setProperty('--flowly-dot-spacing', `${config.dotSpacing}px`);
+        } else {
+            this.container.classList.remove('flowly-background-dots');
+            this.container.style.removeProperty('--flowly-dot-color');
+            this.container.style.removeProperty('--flowly-dot-size');
+            this.container.style.removeProperty('--flowly-dot-spacing');
+        }
     }
 }
 
