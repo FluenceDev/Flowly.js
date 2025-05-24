@@ -1,6 +1,7 @@
 // src/core/Flowly.js
 import Node from './Node';
 import Connection from './Connection';
+import EventEmitter from './EventEmitter'; 
 
 class FlowlyCore {
     constructor() {
@@ -8,10 +9,11 @@ class FlowlyCore {
         this.connections = new Map();
         this.nextNodeId = 1;
         this.nextConnectionId = 1;
+        this.eventEmitter = new EventEmitter();
 
-        this.onNodeAdded = () => {};
+        this.onNodeAdded = () => {}; 
         this.onNodeRemoved = () => {};
-        this.onNodeMoved = () => {};
+        this.onNodeUpdated = () => {};
         this.onConnectionAdded = () => {};
         this.onConnectionRemoved = () => {};
     }
@@ -52,20 +54,32 @@ class FlowlyCore {
         const newNode = new Node(nodeId, posX, posY, data, input, output, htmlContent, showHeader);
         if (theme) newNode.theme = theme;
         this.nodes.set(nodeId, newNode);
-        this.onNodeAdded(newNode);
-        return newNode;
+        
+        if (this.onNodeAdded) this.onNodeAdded(newNode);
+        
+        const nodeWithConnections = this.getNode(nodeId);
+        this.eventEmitter.emit('nodeCreated', nodeWithConnections);
+        return newNode; 
     }
 
     removeNode(nodeId) {
-        if (this.nodes.has(nodeId)) {
+        const nodeInstance = this.nodes.get(nodeId); 
+        if (nodeInstance) {
+            const nodeDataForEvent = this.getNode(nodeId);
+            
             this.nodes.delete(nodeId);
-            this.connections.forEach((conn, connId) => {
+            const connectionsToRemove = [];
+            this.connections.forEach((conn) => {
                 if (conn.sourceNodeId === nodeId || conn.targetNodeId === nodeId) {
-                    this.connections.delete(connId);
-                    this.onConnectionRemoved(conn);
+                    connectionsToRemove.push(conn);
                 }
             });
-            this.onNodeRemoved(nodeId);
+            connectionsToRemove.forEach(conn => {
+                this.removeConnection(conn.id); 
+            });
+            
+            if (this.onNodeRemoved) this.onNodeRemoved(nodeId);
+            this.eventEmitter.emit('nodeRemoved', nodeDataForEvent);
             return true;
         }
         return false;
@@ -75,7 +89,7 @@ class FlowlyCore {
         const node = this.nodes.get(nodeId);
         if (node) {
             node.setPosition(newX, newY);
-            this.onNodeMoved(node);
+            this.onNodeUpdated(node);
             return true;
         }
         return false;
@@ -107,22 +121,31 @@ class FlowlyCore {
         const id = `conn-${this.nextConnectionId++}`;
         const newConnection = new Connection(id, sourceNodeId, sourceOutputId, targetNodeId, targetInputId);
         this.connections.set(id, newConnection);
-        this.onConnectionAdded(newConnection);
+        
+        if (this.onConnectionAdded) this.onConnectionAdded(newConnection);
+        
+        const sourceNode = this.getNode(sourceNodeId);
+        const targetNode = this.getNode(targetNodeId);
+        this.eventEmitter.emit('connectionCreated', { connection: newConnection, sourceNode, targetNode });
         return newConnection;
     }
 
     removeConnection(connectionId) {
         if (this.connections.has(connectionId)) {
-            const connection = this.connections.get(connectionId);
+            const connectionToRemove = this.connections.get(connectionId);
+            const sourceNode = this.getNode(connectionToRemove.sourceNodeId);
+            const targetNode = this.getNode(connectionToRemove.targetNodeId);
+            
             this.connections.delete(connectionId);
-            this.onConnectionRemoved(connection);
+
+            if (this.onConnectionRemoved) this.onConnectionRemoved(connectionToRemove);
+            this.eventEmitter.emit('connectionRemoved', { connection: connectionToRemove, sourceNode, targetNode });
             return true;
         }
         return false;
     }
 
     getConnections(nodeId) {
-        // Retorna as conexões de input e output relacionadas ao node
         const inputs = [];
         const outputs = [];
         for (const conn of this.connections.values()) {
@@ -135,11 +158,11 @@ class FlowlyCore {
     getNode(nodeId) {
         const node = this.nodes.get(nodeId);
         if (node) {
-            // Enriquecer o nó com suas conexões
+
             const nodeConnections = this.getConnections(nodeId);
             return {
-                ...node, // Copia todas as propriedades do nó original
-                connections: nodeConnections // Adiciona as conexões
+                ...node,
+                connections: nodeConnections
             };
         }
         return undefined;
@@ -147,7 +170,6 @@ class FlowlyCore {
 
     getNodes() {
         const allNodes = Array.from(this.nodes.values());
-        // Enriquecer cada nó com suas conexões
         return allNodes.map(node => {
             const nodeConnections = this.getConnections(node.id);
             return {
@@ -183,7 +205,10 @@ class FlowlyCore {
         if (newData.htmlContent !== undefined) node.setHtmlContent(newData.htmlContent);
         if (newData.showHeader !== undefined) node.showHeader = newData.showHeader;
 
-        this.onNodeMoved(node); 
+        if (this.onNodeUpdated) this.onNodeUpdated(node);
+        
+        const updatedNode = this.getNode(nodeId);
+        this.eventEmitter.emit('nodeUpdated', updatedNode);
         return true;
     }
 
@@ -203,7 +228,6 @@ class FlowlyCore {
         this.connections.clear();
         if (Array.isArray(obj.nodes)) {
             for (const n of obj.nodes) {
-                // Reconstrói o Node (mantendo compatibilidade)
                 const node = new Node(n.id, n.x, n.y, n.data, n.input, n.output);
                 if (n.theme) node.theme = n.theme;
                 this.nodes.set(node.id, node);

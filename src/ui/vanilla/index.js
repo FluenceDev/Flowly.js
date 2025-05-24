@@ -97,7 +97,7 @@ class FlowlyVanillaUI {
     setupCoreListeners() {
         this.core.onNodeAdded = (node) => this.addNodeUI(node);
         this.core.onNodeRemoved = (nodeId) => this.removeNodeUI(nodeId);
-        this.core.onNodeMoved = (node) => {
+        this.core.onNodeUpdated = (node) => {
             requestAnimationFrame(() => this.updateConnectionsForNode(node.id));
         };
         this.core.onConnectionAdded = (connection) => {
@@ -515,7 +515,9 @@ class FlowlyVanillaUI {
                             input: nodeToCopy.input ? JSON.parse(JSON.stringify(nodeToCopy.input)) : null,
                             output: nodeToCopy.output ? JSON.parse(JSON.stringify(nodeToCopy.output)) : null,
                             theme: nodeToCopy.theme ? JSON.parse(JSON.stringify(nodeToCopy.theme)) : null,
+                            originalNode: nodeToCopy 
                         };
+                        this.core.eventEmitter.emit('nodeCopied', this.copiedNodeData.originalNode);
                     }
                 }
             }
@@ -544,7 +546,11 @@ class FlowlyVanillaUI {
                         theme: this.copiedNodeData.theme
                     };
 
-                    this.core.addNode(nodeConfig);
+                    const pastedNodeBase = this.core.addNode(nodeConfig);
+                    if (pastedNodeBase) {
+                        const fullPastedNode = this.core.getNode(pastedNodeBase.id);
+                        this.core.eventEmitter.emit('nodePasted', fullPastedNode);
+                    }
                 }
             }
         });

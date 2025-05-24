@@ -9,6 +9,24 @@ class Flowly {
         this.ui.renderInitial();
     }
 
+    on(eventName, listener) {
+        if (this.core && this.core.eventEmitter) {
+            this.core.eventEmitter.on(eventName, listener);
+        } else {
+            console.warn("Attempted to register event listener before core is initialized.");
+        }
+        return this;
+    }
+
+    off(eventName, listener) {
+        if (this.core && this.core.eventEmitter) {
+            this.core.eventEmitter.off(eventName, listener);
+        } else {
+            console.warn("Attempted to unregister event listener before core is initialized.");
+        }
+        return this;
+    }
+
     setTheme(themeObj) {
         // Aplica as variáveis CSS no :root
         for (const key in themeObj) {
