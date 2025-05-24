@@ -34,8 +34,6 @@
     
     /* Variáveis para o padrão de pontos (usadas se --flowly-background-type for 'dots') */
     --flowly-dot-color: #ccc;
-    --flowly-dot-size: 1px;
-    --flowly-dot-spacing: 20px;
 }
 
 html, body {
@@ -228,8 +226,7 @@ button#add-node-btn {
     pointer-events: stroke;
 }
 
-/* Classe para aplicar o padrão de pontos */
+/* Classe para aplicar o padrão de pontos - agora mais simples */
 .flowly-background-dots {
-    background-image: radial-gradient(var(--flowly-dot-color) var(--flowly-dot-size), transparent var(--flowly-dot-size));
-    background-size: var(--flowly-dot-spacing) var(--flowly-dot-spacing);
+    /* background-image e background-size serão definidos por JS */
 }

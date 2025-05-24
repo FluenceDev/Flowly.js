@@ -61,6 +61,8 @@ class FlowlyVanillaUI {
         this.lastMouseX = 0;
         this.lastMouseY = 0;
 
+        this.backgroundOptions = {};
+
         this.container.classList.add('flowly-container');
 
         try {
@@ -76,6 +78,7 @@ class FlowlyVanillaUI {
         this.setupZoomInteractions();
         this.setupKeyboardInteractions();
         this.setupMouseTracking();
+        this.updateBackgroundPattern();
     }
 
     createSvgContainer() {
@@ -212,6 +215,7 @@ class FlowlyVanillaUI {
     updateAllVisuals() {
         this.nodeUIs.forEach(nodeUI => nodeUI.updatePosition());
         this.connectionUIs.forEach(connUI => connUI.updateLinePosition());
+        this.updateBackgroundPattern();
     }
 
     clearNodeSelection() {
@@ -572,25 +576,43 @@ class FlowlyVanillaUI {
         const defaults = {
             type: 'solid',
             color: this.initialBackgroundColor,
-            dotColor: '#ccc',
-            dotSize: 1,
+            dotColor: '#888',
+            dotSize: 2,
             dotSpacing: 20
         };
 
-        const config = { ...defaults, ...options };
+        this.backgroundOptions = { ...defaults, ...options };
 
-        this.container.style.backgroundColor = config.color;
+        this.container.style.backgroundColor = this.backgroundOptions.color;
 
-        if (config.type === 'dots') {
+        if (this.backgroundOptions.type === 'dots') {
             this.container.classList.add('flowly-background-dots');
-            this.container.style.setProperty('--flowly-dot-color', config.dotColor);
-            this.container.style.setProperty('--flowly-dot-size', `${config.dotSize}px`);
-            this.container.style.setProperty('--flowly-dot-spacing', `${config.dotSpacing}px`);
         } else {
             this.container.classList.remove('flowly-background-dots');
-            this.container.style.removeProperty('--flowly-dot-color');
-            this.container.style.removeProperty('--flowly-dot-size');
-            this.container.style.removeProperty('--flowly-dot-spacing');
+            this.container.style.backgroundImage = '';
+            this.container.style.backgroundSize = '';
+            this.container.style.backgroundPosition = '';
+        }
+        this.updateBackgroundPattern();
+    }
+
+    updateBackgroundPattern() {
+        if (this.backgroundOptions.type === 'dots') {
+            const scaledDotSize = Math.max(0.5, this.backgroundOptions.dotSize * this.zoom);
+            const scaledDotSpacing = this.backgroundOptions.dotSpacing * this.zoom;
+
+            if (scaledDotSpacing < 5) {
+                this.container.style.backgroundImage = '';
+                return;
+            }
+
+            this.container.style.backgroundImage = `radial-gradient(${this.backgroundOptions.dotColor} ${scaledDotSize}px, transparent ${scaledDotSize}px)`;
+            this.container.style.backgroundSize = `${scaledDotSpacing}px ${scaledDotSpacing}px`;
+            this.container.style.backgroundPosition = `${this.canvasOffsetX}px ${this.canvasOffsetY}px`;
+        } else {
+            this.container.style.backgroundImage = '';
+            this.container.style.backgroundSize = '';
+            this.container.style.backgroundPosition = '';
         }
     }
 }
