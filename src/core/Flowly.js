@@ -95,7 +95,7 @@ class FlowlyCore {
         return false;
     }
 
-    addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId) {
+    addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent = null) {
         const sourceNodeInstance = this.nodes.get(sourceNodeId);
         const targetNodeInstance = this.nodes.get(targetNodeId);
 
@@ -161,7 +161,7 @@ class FlowlyCore {
         }
 
         const id = `conn-${this.nextConnectionId++}`;
-        const newConnection = new Connection(id, sourceNodeId, sourceOutputId, targetNodeId, targetInputId);
+        const newConnection = new Connection(id, sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent);
         this.connections.set(id, newConnection);
         
         if (this.onConnectionAdded) this.onConnectionAdded(newConnection);
@@ -281,6 +281,20 @@ class FlowlyCore {
                 this.connections.set(conn.id, conn);
             }
         }
+    }
+
+    updateConnectionLabel(connectionId, labelHtmlContent) {
+        const connection = this.connections.get(connectionId);
+        if (connection) {
+            connection.labelHtmlContent = labelHtmlContent;
+            // Dispara um evento para notificar a UI sobre a mudança no label
+            const sourceNode = this.getNode(connection.sourceNodeId);
+            const targetNode = this.getNode(connection.targetNodeId);
+            this.eventEmitter.emit('connectionLabelChanged', { connection, sourceNode, targetNode });
+            return true;
+        }
+        console.warn(`updateConnectionLabel: Connection with id "${connectionId}" not found.`);
+        return false;
     }
 }
 

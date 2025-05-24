@@ -227,6 +227,18 @@ button#add-node-btn {
     pointer-events: stroke;
 }
 
+.flowly-connection-label {
+    background-color: var(--flowly-node-bg, white); /* Usa o fundo do nó ou branco */
+    color: var(--flowly-node-header-color, black); /* Usa a cor do header do nó ou preto */
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid var(--flowly-node-border, #ccc);
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    white-space: nowrap; /* Evita quebra de linha por padrão */
+    /* pointer-events: all; já definido em JS, mas pode ser reforçado aqui se necessário */
+}
+
 /* Classe para aplicar o padrão de pontos - agora mais simples */
 .flowly-background-dots {
     /* background-image e background-size serão definidos por JS */

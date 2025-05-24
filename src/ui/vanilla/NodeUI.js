@@ -1,13 +1,21 @@
 // src/ui/vanilla/NodeUI.js
 
 class NodeUI {
-    constructor(node, containerElement, core, getCanvasOffsetAndZoomFunction) {
+    constructor(node, containerElement, core, getCanvasOffsetAndZoomFunction, parentUI) {
         this.node = node;
         this.containerElement = containerElement;
         this.core = core;
         this.getCanvasOffsetAndZoom = getCanvasOffsetAndZoomFunction;
+        this.parentUI = parentUI;
         this.element = this.createNodeElement();
         this.render();
+
+        this.element.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (this.parentUI && typeof this.parentUI.notifyNodeDoubleClick === 'function') {
+                this.parentUI.notifyNodeDoubleClick(this.node.id);
+            }
+        });
     }
 
     createNodeElement() {

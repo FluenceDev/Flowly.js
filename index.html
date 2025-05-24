@@ -72,6 +72,7 @@
   document.getElementById('get-node').addEventListener('click', () => {
    let node = flowly.getById('node-1');
 
+  
    console.log(node);
   });
 
@@ -110,6 +111,9 @@
       // console.log(`Colado em X: ${pastedNode.x}, Y: ${pastedNode.y}`);
   });
 
+  flowly.on('nodeDoubleClick', (nodeObject) => { console.log('Nó clicado duas vezes:', nodeObject); });
+
+  flowly.on('connectionLabelDoubleClick', (nodeObject) => { console.log('Label clicado duas vezes:', nodeObject); });
 
 </script>
 </body>

@@ -104,10 +104,19 @@ class FlowlyVanillaUI {
             requestAnimationFrame(() => this.addConnectionUI(connection));
         };
         this.core.onConnectionRemoved = (connection) => this.removeConnectionUI(connection);
+
+        if (this.core.eventEmitter) {
+            this.core.eventEmitter.on('connectionLabelChanged', ({ connection }) => {
+                const connUI = this.connectionUIs.get(connection.id);
+                if (connUI) {
+                    connUI.updateLabel(connection.labelHtmlContent);
+                }
+            });
+        }
     }
 
     addNodeUI(node) {
-        const nodeUI = new NodeUI(node, this.container, this.core, this.getCanvasOffsetAndZoom.bind(this));
+        const nodeUI = new NodeUI(node, this.container, this.core, this.getCanvasOffsetAndZoom.bind(this), this);
         this.nodeUIs.set(node.id, nodeUI);
         nodeUI.enableDragging(interact);
     }
@@ -142,7 +151,15 @@ class FlowlyVanillaUI {
     }
 
     addConnectionUI(connection) {
-        const connectionUI = new ConnectionUI(connection, this.svgContainer, this.getPortWorldPosition.bind(this), this.getSimpleBezierPath.bind(this), this);
+        const connectionUI = new ConnectionUI(
+            connection, 
+            this.svgContainer, 
+            this.container,
+            this.getPortWorldPosition.bind(this), 
+            this.getSimpleBezierPath.bind(this),
+            this.getCanvasOffsetAndZoom.bind(this),
+            this
+        );
         this.connectionUIs.set(connection.id, connectionUI);
     }
 
@@ -270,6 +287,11 @@ class FlowlyVanillaUI {
             const target = e.target;
             const clickedNodeElement = target.closest(`.${CSS_CLASSES.NODE}`);
             const clickedConnectionElement = target.closest(`.${CSS_CLASSES.CONNECTION}`);
+            const clickedLabelElement = target.closest('.flowly-connection-label');
+
+            if (clickedLabelElement) {
+                return;
+            }
 
             if (clickedNodeElement) {
                 const clickedNodeId = clickedNodeElement.dataset.nodeId;
@@ -332,7 +354,6 @@ class FlowlyVanillaUI {
                 this.lastPanPointerX = e.clientX;
                 this.lastPanPointerY = e.clientY;
                 this.container.setPointerCapture(e.pointerId);
-
                 this.container.classList.add('panning');
                 return;
             }
@@ -619,6 +640,21 @@ class FlowlyVanillaUI {
             this.container.style.backgroundImage = '';
             this.container.style.backgroundSize = '';
             this.container.style.backgroundPosition = '';
+        }
+    }
+
+    notifyNodeDoubleClick(nodeId) {
+        if (this.core && this.core.eventEmitter) {
+            const node = this.core.getById(nodeId);
+            if (node) {
+                this.core.eventEmitter.emit('nodeDoubleClick', node);
+            }
+        }
+    }
+
+    notifyConnectionLabelDoubleClick(connectionId) {
+        if (this.core && this.core.eventEmitter) {
+            this.core.eventEmitter.emit('connectionLabelDoubleClick', connectionId);
         }
     }
 }

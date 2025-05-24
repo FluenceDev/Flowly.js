@@ -84,12 +84,64 @@ class Flowly {
         return result;
     }
 
-    addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId) {
-        return this.core.addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId);
+    addConnection(...args) {
+        let sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent = null;
+
+        if (args.length === 2 || (args.length === 3 && typeof args[2] === 'string')) {
+            // Assinatura: (sourceNodeId, targetNodeId, optionalLabelHtmlContent)
+            sourceNodeId = args[0];
+            targetNodeId = args[1];
+            if (args.length === 3) {
+                labelHtmlContent = args[2];
+            }
+
+            const sourceNode = this.core.getNode(sourceNodeId); // getNode do core retorna o nó com suas props
+            const targetNode = this.core.getNode(targetNodeId);
+
+            if (!sourceNode) {
+                console.warn(`addConnection: Source node with id "${sourceNodeId}" not found.`);
+                return null;
+            }
+            if (!targetNode) {
+                console.warn(`addConnection: Target node with id "${targetNodeId}" not found.`);
+                return null;
+            }
+
+            if (!sourceNode.output || !sourceNode.output.id) {
+                console.warn(`addConnection: Source node "${sourceNodeId}" does not have a default output port defined or it lacks an id.`);
+                return null;
+            }
+            if (!targetNode.input || !targetNode.input.id) {
+                console.warn(`addConnection: Target node "${targetNodeId}" does not have a default input port defined or it lacks an id.`);
+                return null;
+            }
+
+            sourceOutputId = `${sourceNodeId}-${sourceNode.output.id}`;
+            targetInputId = `${targetNodeId}-${targetNode.input.id}`;
+
+        } else if (args.length === 4 || args.length === 5) {
+            // Assinatura: (sourceNodeId, sourceOutputId, targetNodeId, targetInputId, optionalLabelHtmlContent)
+            sourceNodeId = args[0];
+            sourceOutputId = args[1];
+            targetNodeId = args[2];
+            targetInputId = args[3];
+            if (args.length === 5) {
+                labelHtmlContent = args[4];
+            }
+        } else {
+            console.error('addConnection: Invalid number of arguments.');
+            return null;
+        }
+
+        return this.core.addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent);
     }
 
     removeConnection(connectionId) {
         return this.core.removeConnection(connectionId);
+    }
+
+    addLabelToConnection(connectionId, labelHtmlContent) {
+        return this.core.updateConnectionLabel(connectionId, labelHtmlContent);
     }
 
     toJSON() {
