@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowly.js Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Flowly.js Demo</h1>
+<div id="flowly-container" class="flowly-container"></div>
+
+<button id="add-node-btn">Add Node</button>
+
+<script type="module" src="/src/main.js"></script>
+<script type="module">
+  import Flowly from './src/main.js';
+
+  const flowly = new Flowly('flowly-container');
+
+
+  document.getElementById('add-node-btn').addEventListener('click', () => {
+    const x = Math.random() * 500; // Posição aleatória para demonstração
+    const y = Math.random() * 300;
+    flowly.addNode(x, y, { name: `Node ${flowly.core.nextNodeId}` });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+/* public/style.css */
+
+/* Reset básico e configuração do body para flexbox */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: pan-x pan-y;
+}
+
+h1 {
+    margin: 20px 0 10px 0;
+}
+
+.flowly-container {
+    border: 1px solid #ccc;
+    width: calc(100% - 40px);
+    flex-grow: 1;
+    max-width: 900px;
+    min-height: 400px;
+
+    position: relative;
+    overflow: hidden;
+    background-color: #f8f8f8;
+    margin-bottom: 20px;
+
+    touch-action: none;
+    cursor: grab;
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+}
+
+.flowly-container.panning {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+    cursor: -moz-grabbing;
+}
+
+button#add-node-btn {
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.flowly-node {
+    background-color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    min-width: 150px;
+    min-height: 80px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    user-select: none;
+}
+
+.flowly-node-header {
+    background-color: #eee;
+    padding: 8px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.flowly-node-body {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    flex-grow: 1;
+}
+
+.flowly-node-port-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.flowly-node-port {
+    width: 15px;
+    height: 15px;
+    background-color: #666;
+    border-radius: 50%;
+    cursor: crosshair;
+    box-sizing: border-box;
+
+    padding: 8px;
+    margin: -8px -18px;
+}
+
+.flowly-node-input-ports .flowly-node-port {
+    align-self: flex-start;
+}
+
+.flowly-node-output-ports .flowly-node-port {
+    align-self: flex-end;
+}
+
+.flowly-connection {
+    fill: none;
+    stroke: #555;
+    stroke-width: 2px;
+}
+.flowly-connection.selected {
+    stroke: #e74c3c; /* Uma cor vermelha para destacar */
+    stroke-width: 3; /* Aumenta a largura para ser mais visível */
+    filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.7)); /* Adiciona uma sombra para realçar */
+}
+
+.flowly-temp-connection {
+    fill: none;
+    stroke: blue;
+    stroke-width: 2px;
+    stroke-dasharray: 5,5;
+}
+
+.flowly-svg-connections {
+    z-index: 1;
+}
+
+.flowly-node.selected {
+    border: 2px solid #3498db;
+    box-shadow: 0px 0px 15px rgba(52, 152, 219, 0.7);
+}
