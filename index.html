@@ -76,38 +76,36 @@
 
 
   flowly.on('nodeCreated', (node) => {
-      console.log('Evento: Nó Criado!', node);
+      // console.log('Evento: Nó Criado!', node);
   });
 
   flowly.on('nodeRemoved', (node) => {
-      console.log('Evento: Nó Removido!', node);
-      // O 'node' aqui é o objeto do nó como era antes de ser deletado,
-      // incluindo seus dados, htmlContent, showHeader, e conexões que tinha.
+      // console.log('Evento: Nó Removido!', node);
   });
 
   flowly.on('connectionCreated', (data) => {
-      console.log('Evento: Conexão Criada!', data.connection);
-      console.log('Nó de Origem:', data.sourceNode);
-      console.log('Nó de Destino:', data.targetNode);
+      // console.log('Evento: Conexão Criada!', data.connection);
+      // console.log('Nó de Origem:', data.sourceNode);
+      // console.log('Nó de Destino:', data.targetNode);
   });
 
   flowly.on('connectionRemoved', (data) => {
-      console.log('Evento: Conexão Removida!', data.connection);
-      console.log('Nó de Origem (anterior):', data.sourceNode);
-      console.log('Nó de Destino (anterior):', data.targetNode);
+      // console.log('Evento: Conexão Removida!', data.connection);
+      // console.log('Nó de Origem (anterior):', data.sourceNode);
+      // console.log('Nó de Destino (anterior):', data.targetNode);
   });
 
   flowly.on('nodeUpdated', (node) => {
-      console.log('Evento: Nó Atualizado!', node);
+      // console.log('Evento: Nó Atualizado!', node);
   });
 
   flowly.on('nodeCopied', (copiedNode) => {
-      console.log('Evento: Nó Copiado para a área de transferência (representação interna)!', copiedNode);
+      // console.log('Evento: Nó Copiado para a área de transferência', copiedNode);
   });
 
   flowly.on('nodePasted', (pastedNode) => {
-      console.log('Evento: Nó Colado!', pastedNode);
-      console.log(`Colado em X: ${pastedNode.x}, Y: ${pastedNode.y}`);
+      // console.log('Evento: Nó Colado!', pastedNode);
+      // console.log(`Colado em X: ${pastedNode.x}, Y: ${pastedNode.y}`);
   });
 
 
