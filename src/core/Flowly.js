@@ -96,23 +96,65 @@ class FlowlyCore {
     }
 
     addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId) {
-        if (!this.nodes.has(sourceNodeId) || !this.nodes.has(targetNodeId)) {
+        const sourceNodeInstance = this.nodes.get(sourceNodeId);
+        const targetNodeInstance = this.nodes.get(targetNodeId);
+
+        if (!sourceNodeInstance || !targetNodeInstance) {
             console.warn('Source or target node not found for connection.');
             return null;
         }
 
-        const hasDuplicate = Array.from(this.connections.values()).some(conn => 
-            conn.sourceNodeId === sourceNodeId && 
-            conn.sourceOutputId === sourceOutputId &&
-            conn.targetNodeId === targetNodeId && 
-            conn.targetInputId === targetInputId
-        );
+        // Verificar se as portas específicas existem (pode ser mais robusto)
+        const sourcePort = sourceNodeInstance.output;
+        const targetPort = targetNodeInstance.input;
 
+        if (!sourcePort || sourcePort.id !== sourceOutputId.split('-').pop()) {
+            console.warn(`Source port ${sourceOutputId} not found or ID mismatch on node ${sourceNodeId}.`);
+            return null;
+        }
+        if (!targetPort || targetPort.id !== targetInputId.split('-').pop()) {
+            console.warn(`Target port ${targetInputId} not found or ID mismatch on node ${targetNodeId}.`);
+            return null;
+        }
+
+        // Verificação de Limite da Porta de Saída
+        if (sourcePort.limit !== Infinity) {
+            let outputConnectionsCount = 0;
+            for (const conn of this.connections.values()) {
+                if (conn.sourceNodeId === sourceNodeId && conn.sourceOutputId === sourceOutputId) {
+                    outputConnectionsCount++;
+                }
+            }
+            if (outputConnectionsCount >= sourcePort.limit) {
+                console.warn(`Output port ${sourceOutputId} on node ${sourceNodeId} has reached its connection limit of ${sourcePort.limit}.`);
+                this.eventEmitter.emit('connectionLimitReached', { nodeId: sourceNodeId, portId: sourceOutputId, portType: 'output', limit: sourcePort.limit });
+                return null;
+            }
+        }
+
+        // Verificação de Limite da Porta de Entrada
+        if (targetPort.limit !== Infinity) {
+            let inputConnectionsCount = 0;
+            for (const conn of this.connections.values()) {
+                if (conn.targetNodeId === targetNodeId && conn.targetInputId === targetInputId) {
+                    inputConnectionsCount++;
+                }
+            }
+            if (inputConnectionsCount >= targetPort.limit) {
+                console.warn(`Input port ${targetInputId} on node ${targetNodeId} has reached its connection limit of ${targetPort.limit}.`);
+                this.eventEmitter.emit('connectionLimitReached', { nodeId: targetNodeId, portId: targetInputId, portType: 'input', limit: targetPort.limit });
+                return null;
+            }
+        }
+
+        const hasDuplicate = Array.from(this.connections.values()).some(conn => 
+            conn.sourceNodeId === sourceNodeId && conn.sourceOutputId === sourceOutputId &&
+            conn.targetNodeId === targetNodeId && conn.targetInputId === targetInputId
+        );
         if (hasDuplicate) {
             console.warn('Connection already exists.');
             return null;
         }
-
         if (sourceNodeId === targetNodeId) {
             console.warn('Self connections are not allowed.');
             return null;
@@ -124,9 +166,9 @@ class FlowlyCore {
         
         if (this.onConnectionAdded) this.onConnectionAdded(newConnection);
         
-        const sourceNode = this.getNode(sourceNodeId);
-        const targetNode = this.getNode(targetNodeId);
-        this.eventEmitter.emit('connectionCreated', { connection: newConnection, sourceNode, targetNode });
+        const sourceNodeForEvent = this.getNode(sourceNodeId);
+        const targetNodeForEvent = this.getNode(targetNodeId);
+        this.eventEmitter.emit('connectionCreated', { connection: newConnection, sourceNode: sourceNodeForEvent, targetNode: targetNodeForEvent });
         return newConnection;
     }
 

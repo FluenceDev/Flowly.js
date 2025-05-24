@@ -10,12 +10,14 @@ class Node {
         this.input = input ? {
             id: input.id || 'input',
             name: input.name || 'Input',
+            limit: input.limit === undefined || input.limit === null ? Infinity : parseInt(input.limit, 10),
             ...input
         } : null;
 
         this.output = output ? {
             id: output.id || 'output',
             name: output.name || 'Output',
+            limit: output.limit === undefined || output.limit === null ? Infinity : parseInt(output.limit, 10),
             ...output
         } : null;
     }
