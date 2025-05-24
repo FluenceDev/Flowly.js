@@ -55,6 +55,23 @@ class FlowlyCore {
             return null;
         }
 
+        const hasDuplicate = Array.from(this.connections.values()).some(conn => 
+            conn.sourceNodeId === sourceNodeId && 
+            conn.sourceOutputId === sourceOutputId &&
+            conn.targetNodeId === targetNodeId && 
+            conn.targetInputId === targetInputId
+        );
+
+        if (hasDuplicate) {
+            console.warn('Connection already exists.');
+            return null;
+        }
+
+        if (sourceNodeId === targetNodeId) {
+            console.warn('Self connections are not allowed.');
+            return null;
+        }
+
         const id = `conn-${this.nextConnectionId++}`;
         const newConnection = new Connection(id, sourceNodeId, sourceOutputId, targetNodeId, targetInputId);
         this.connections.set(id, newConnection);
