@@ -31,6 +31,7 @@ class FlowlyVanillaUI {
             throw new Error(`Container with ID '${containerId}' not found.`);
         }
         this.core = core;
+        this.isReadOnlyGlobal = initialConfig.readOnly || false;
         this.nodeUIs = new Map();
         this.connectionUIs = new Map();
 
@@ -112,13 +113,18 @@ class FlowlyVanillaUI {
                     connUI.updateLabel(connection.labelHtmlContent);
                 }
             });
+
+            this.core.eventEmitter.on('flowLoaded', () => {
+                this.clearAllUI();
+                this.renderInitial();
+                this.updateAllVisuals();
+            });
         }
     }
 
     addNodeUI(node) {
-        const nodeUI = new NodeUI(node, this.container, this.core, this.getCanvasOffsetAndZoom.bind(this), this);
+        const nodeUI = new NodeUI(node, this.container, this.core, this.getCanvasOffsetAndZoom.bind(this), this, this.isReadOnlyGlobal);
         this.nodeUIs.set(node.id, nodeUI);
-        nodeUI.enableDragging(interact);
     }
 
     removeNodeUI(nodeId) {
@@ -308,6 +314,17 @@ class FlowlyVanillaUI {
                 this.clearConnectionSelection();
             }
 
+            if (this.isReadOnlyGlobal && 
+                !(target.classList.contains(CSS_CLASSES.PORT) && target.dataset.portType === PORT_TYPES.OUTPUT) &&
+                !clickedNodeElement
+            ) {
+                if (!clickedNodeElement && !target.classList.contains(CSS_CLASSES.PORT) && !target.closest(`.${CSS_CLASSES.CONNECTION}`) && !clickedLabelElement) {
+                    // Se o clique foi no canvas vazio, permitir pan mesmo em read-only global
+                } else {
+                    // return; // Retornar aqui pode ser muito agressivo, desabilitando seleção em RO global.
+                }
+            }
+
             if (e.pointerType === 'touch' && this.pointers.size === 2) {
                 e.preventDefault();
                 this.currentInteractionType = 'pinch';
@@ -319,9 +336,17 @@ class FlowlyVanillaUI {
             }
 
             if (target.classList.contains(CSS_CLASSES.PORT) && target.dataset.portType === PORT_TYPES.OUTPUT) {
+                if (this.isReadOnlyGlobal) return;
+
+                const sourceNodeId = target.closest(`.${CSS_CLASSES.NODE}`).dataset.nodeId;
+                const sourceNodeCore = this.core.getById(sourceNodeId);
+                if (sourceNodeCore && sourceNodeCore.readOnly) {
+                    console.warn(`Node ${sourceNodeId} is read-only. Cannot start connection from it.`);
+                    return;
+                }
+
                 e.preventDefault();
                 this.currentInteractionType = 'connection';
-                const sourceNodeId = target.closest(`.${CSS_CLASSES.NODE}`).dataset.nodeId;
                 const sourceOutputId = target.dataset.portId;
                 this.currentConnectionStart = { sourceNodeId, sourceOutputId };
 
@@ -367,6 +392,10 @@ class FlowlyVanillaUI {
             }
 
             this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (this.isReadOnlyGlobal && this.currentInteractionType === 'connection') {
+                return;
+            }
 
             if (this.currentInteractionType === 'pinch') {
                 if (this.pointers.size === 2) {
@@ -436,7 +465,7 @@ class FlowlyVanillaUI {
                 }
             } else if (wasPan) {
                 this.container.classList.remove('panning');
-            } else if (wasConnection) {
+            } else if (wasConnection && !this.isReadOnlyGlobal) {
                 if (this.tempLine && this.tempLine.parentNode) {
                     this.tempLine.parentNode.removeChild(this.tempLine);
                     this.tempLine = null;
@@ -445,18 +474,37 @@ class FlowlyVanillaUI {
                 const clientX = e.clientX;
                 const clientY = e.clientY;
                 const targetElementAtRelease = document.elementFromPoint(clientX, clientY);
-
                 const targetPortElement = targetElementAtRelease ? targetElementAtRelease.closest(`.${CSS_CLASSES.PORT}`) : null;
 
                 if (this.currentConnectionStart && targetPortElement && targetPortElement.dataset.portType === PORT_TYPES.INPUT) {
                     const targetNodeId = targetPortElement.closest(`.${CSS_CLASSES.NODE}`).dataset.nodeId;
-                    const targetInputId = targetPortElement.dataset.portId;
+                    const targetNodeCore = this.core.getById(targetNodeId);
+
+                    if (targetNodeCore && targetNodeCore.readOnly) {
+                        console.warn(`Node ${targetNodeId} is read-only. Cannot connect to it.`);
+                        if (this.tempLine && this.tempLine.parentNode) {
+                            this.tempLine.parentNode.removeChild(this.tempLine);
+                            this.tempLine = null;
+                        }
+                        this.currentConnectionStart = null;
+                        return;
+                    }
+                    const sourceNodeCore = this.core.getById(this.currentConnectionStart.sourceNodeId);
+                    if (sourceNodeCore && sourceNodeCore.readOnly) {
+                         console.warn(`Source Node ${sourceNodeCore.id} is read-only. Cannot complete connection.`);
+                        if (this.tempLine && this.tempLine.parentNode) {
+                            this.tempLine.parentNode.removeChild(this.tempLine);
+                            this.tempLine = null;
+                        }
+                        this.currentConnectionStart = null;
+                        return;
+                    }
 
                     this.core.addConnection(
                         this.currentConnectionStart.sourceNodeId,
                         this.currentConnectionStart.sourceOutputId,
                         targetNodeId,
-                        targetInputId
+                        targetPortElement.dataset.portId
                     );
                 }
                 this.currentConnectionStart = null;
@@ -512,10 +560,25 @@ class FlowlyVanillaUI {
 
     setupKeyboardInteractions() {
         document.addEventListener('keydown', (e) => {
+            if (this.isReadOnlyGlobal) {
+                if (e.key === 'Backspace' || e.key === 'Delete' || ((e.ctrlKey || e.metaKey) && e.key === 'v')) {
+                    e.preventDefault();
+                }
+                if (!((e.ctrlKey || e.metaKey) && e.key === 'c')) {
+                    return;
+                }
+            }
+
             if (e.key === 'Backspace' || e.key === 'Delete') {
                 e.preventDefault();
+                if (this.isReadOnlyGlobal) return;
 
                 if (this.selectedNodeId) {
+                    const node = this.core.getById(this.selectedNodeId);
+                    if (node && node.readOnly) {
+                        console.warn(`Node ${this.selectedNodeId} is read-only. Cannot delete.`);
+                        return;
+                    }
                     this.core.removeNode(this.selectedNodeId);
                     this.clearNodeSelection();
                 } else if (this.selectedConnectionId) {
@@ -544,6 +607,7 @@ class FlowlyVanillaUI {
             }
 
             if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                if (this.isReadOnlyGlobal) return;
                 e.preventDefault();
                 if (this.copiedNodeData) {
                     const pasteXClient = this.lastMouseX;
@@ -593,7 +657,7 @@ class FlowlyVanillaUI {
     }
 
     renderInitial() {
-        this.core.getNodes().forEach(node => this.addNodeUI(node));
+        this.core.getAllNodes().forEach(node => this.addNodeUI(node));
         requestAnimationFrame(() => {
             this.core.getAllConnections().forEach(connection => this.addConnectionUI(connection));
         });
@@ -655,6 +719,41 @@ class FlowlyVanillaUI {
     notifyConnectionLabelDoubleClick(connectionId) {
         if (this.core && this.core.eventEmitter) {
             this.core.eventEmitter.emit('connectionLabelDoubleClick', connectionId);
+        }
+    }
+
+    clearAllUI() {
+        this.nodeUIs.forEach(nodeUI => {
+            if (nodeUI.element && nodeUI.element.parentNode) {
+                nodeUI.element.parentNode.removeChild(nodeUI.element);
+            }
+        });
+        this.nodeUIs.clear();
+
+        this.connectionUIs.forEach(connUI => {
+            connUI.remove();
+        });
+        this.connectionUIs.clear();
+    }
+
+    setReadOnly(isReadOnly) {
+        this.isReadOnlyGlobal = !!isReadOnly;
+
+        this.nodeUIs.forEach(nodeUI => {
+            nodeUI.updateDraggableStatus();
+        });
+
+        if (this.isReadOnlyGlobal) {
+            if (this.currentInteractionType === 'connection' && this.tempLine) {
+                if (this.tempLine.parentNode) {
+                    this.tempLine.parentNode.removeChild(this.tempLine);
+                }
+                this.tempLine = null;
+                this.currentConnectionStart = null;
+            }
+            this.container.classList.remove('panning');
+        } else {
+            // Lógica para quando sai do modo read-only, se necessário.
         }
     }
 }

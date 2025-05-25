@@ -124,7 +124,6 @@ button#add-node-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    touch-action: none;
 }
 
 .flowly-node-default-content {

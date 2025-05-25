@@ -6,7 +6,17 @@ class Flowly {
     constructor(containerId, options = {}) {
         this.core = new FlowlyCore();
         this.ui = new FlowlyVanillaUI(containerId, this.core, options);
+        this.core.setGlobalReadOnly(options.readOnly || false);
         this.ui.renderInitial();
+    }
+
+    setReadOnly(isReadOnly) {
+        const readOnlyState = !!isReadOnly;
+        this.core.setGlobalReadOnly(readOnlyState);
+        if (this.ui && typeof this.ui.setReadOnly === 'function') {
+            this.ui.setReadOnly(readOnlyState);
+        }
+        return this;
     }
 
     on(eventName, listener) {
@@ -60,6 +70,10 @@ class Flowly {
 
     getConnections(nodeId) {
         return this.core.getConnections(nodeId);
+    }
+
+    getConnectedNodes(nodeId) {
+        return this.core.getConnectedNodes(nodeId);
     }
 
     getAllConnections() {
@@ -149,7 +163,7 @@ class Flowly {
     }
 
     fromJSON(json) {
-        return this.core.fromJSON(json);
+        this.core.fromJSON(json);
     }
 }
 

@@ -1,14 +1,19 @@
 // src/ui/vanilla/NodeUI.js
+import interact from 'interactjs';
 
 class NodeUI {
-    constructor(node, containerElement, core, getCanvasOffsetAndZoomFunction, parentUI) {
+    constructor(node, containerElement, core, getCanvasOffsetAndZoomFunction, parentUI, isReadOnlyGlobal) {
         this.node = node;
         this.containerElement = containerElement;
         this.core = core;
         this.getCanvasOffsetAndZoom = getCanvasOffsetAndZoomFunction;
         this.parentUI = parentUI;
+        this.isReadOnlyGlobal = isReadOnlyGlobal;
         this.element = this.createNodeElement();
+        
         this.render();
+        this.initializeDraggable();
+        this.updateDraggableStatus();
 
         this.element.addEventListener('dblclick', (e) => {
             e.stopPropagation();
@@ -22,7 +27,18 @@ class NodeUI {
         const nodeDiv = document.createElement('div');
         nodeDiv.classList.add('flowly-node');
         nodeDiv.setAttribute('data-node-id', this.node.id);
-        nodeDiv.style.touchAction = 'none';
+
+        const isNodeEffectivelyReadOnly = this.isReadOnlyGlobal || this.node.readOnly;
+
+        if (isNodeEffectivelyReadOnly) {
+            nodeDiv.classList.add('flowly-node-readonly');
+            if (this.isReadOnlyGlobal) {
+                nodeDiv.classList.add('flowly-node-readonly-global');
+            }
+            if (this.node.readOnly) {
+                nodeDiv.classList.add('flowly-node-readonly-specific');
+            }
+        }
 
         if (this.node.theme) {
             for (const key in this.node.theme) {
@@ -83,18 +99,16 @@ class NodeUI {
         this.element.style.transform = `translate(${screenX}px, ${screenY}px) scale(${zoom})`;
     }
 
-    enableDragging(interact) {
+    initializeDraggable() {
         if (!this.element) {
             console.error("NodeUI element not found for dragging.");
             return;
         }
-
-        interact(this.element).unset();
-
+        
         interact(this.element)
             .draggable({
                 preventDefault: 'auto',
-                ignoreFrom: '.flowly-node-port',
+                ignoreFrom: '.flowly-node-port, .flowly-node-custom-content-wrapper *',
                 listeners: {
                     start: (event) => {
                         this.element.classList.add('flowly-node-dragging');
@@ -111,6 +125,30 @@ class NodeUI {
                     }
                 }
             });
+    }
+
+    updateDraggableStatus() {
+        if (!this.element) return;
+
+        if (this.parentUI && this.parentUI.isReadOnlyGlobal !== undefined) {
+            this.isReadOnlyGlobal = this.parentUI.isReadOnlyGlobal;
+        }
+
+        const isEffectivelyReadOnly = this.isReadOnlyGlobal || this.node.readOnly;
+        
+        interact(this.element).draggable({ enabled: !isEffectivelyReadOnly });
+
+        if (isEffectivelyReadOnly) {
+            this.element.style.cursor = 'default';
+            this.element.classList.add('flowly-node-readonly');
+            if (this.isReadOnlyGlobal) this.element.classList.add('flowly-node-readonly-global');
+            else this.element.classList.remove('flowly-node-readonly-global');
+            if (this.node.readOnly) this.element.classList.add('flowly-node-readonly-specific');
+            else this.element.classList.remove('flowly-node-readonly-specific');
+        } else {
+            this.element.style.cursor = 'grab';
+            this.element.classList.remove('flowly-node-readonly', 'flowly-node-readonly-global', 'flowly-node-readonly-specific');
+        }
     }
 }
 
