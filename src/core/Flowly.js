@@ -1,8 +1,10 @@
-// src/core/Flowly.js
 import Node from './Node';
 import Connection from './Connection';
 import EventEmitter from './EventEmitter'; 
 
+/**
+ * Core engine for managing nodes and connections.
+ */
 class FlowlyCore {
     constructor() {
         this.nodes = new Map();
@@ -19,10 +21,20 @@ class FlowlyCore {
         this.onConnectionRemoved = () => {};
     }
 
+    /**
+     * Sets global read-only state.
+     * @param {boolean} isReadOnly
+     * @returns {void}
+     */
     setGlobalReadOnly(isReadOnly) {
         this.isReadOnlyGlobal = !!isReadOnly;
     }
 
+    /**
+     * Generates a unique node id.
+     * @param {string|null} [preferredId]
+     * @returns {string}
+     */
     generateUniqueNodeId(preferredId = null) {
         if (preferredId && !this.nodes.has(preferredId)) {
             return preferredId;
@@ -36,6 +48,11 @@ class FlowlyCore {
         return candidateId;
     }
 
+    /**
+     * Adds a new node to the flow.
+     * @param {{posX:number,posY:number,id?:string,name?:string,data?:Object,input?:Object|null,output?:Object|null,theme?:Object,htmlContent?:string|null,showHeader?:boolean,readOnly?:boolean}} config
+     * @returns {Node|null}
+     */
     addNode(config) {
         if (this.isReadOnlyGlobal) {
             console.warn("Flowly is in read-only mode. Cannot add node.");
@@ -72,6 +89,11 @@ class FlowlyCore {
         return newNode; 
     }
 
+    /**
+     * Removes a node and all related connections.
+     * @param {string} nodeId
+     * @returns {boolean}
+     */
     removeNode(nodeId) {
         const nodeInstance = this.nodes.get(nodeId);
         if (this.isReadOnlyGlobal || (nodeInstance && nodeInstance.readOnly)) {
@@ -99,6 +121,13 @@ class FlowlyCore {
         return false;
     }
 
+    /**
+     * Updates node position.
+     * @param {string} nodeId
+     * @param {number} newX
+     * @param {number} newY
+     * @returns {boolean}
+     */
     updateNodePosition(nodeId, newX, newY) {
         const node = this.nodes.get(nodeId);
         if (this.isReadOnlyGlobal || (node && node.readOnly)) {
@@ -113,6 +142,15 @@ class FlowlyCore {
         return false;
     }
 
+    /**
+     * Adds a connection between nodes.
+     * @param {string} sourceNodeId
+     * @param {string} sourceOutputId
+     * @param {string} targetNodeId
+     * @param {string} targetInputId
+     * @param {string|null} [labelHtmlContent]
+     * @returns {Connection|null}
+     */
     addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent = null) {
         const sourceNodeInstance = this.nodes.get(sourceNodeId);
         const targetNodeInstance = this.nodes.get(targetNodeId);
@@ -129,7 +167,6 @@ class FlowlyCore {
             return null;
         }
 
-        // Verificar se as portas específicas existem (pode ser mais robusto)
         const sourcePort = sourceNodeInstance.output;
         const targetPort = targetNodeInstance.input;
 
@@ -142,7 +179,6 @@ class FlowlyCore {
             return null;
         }
 
-        // Verificação de Limite da Porta de Saída
         if (sourcePort.limit !== Infinity) {
             let outputConnectionsCount = 0;
             for (const conn of this.connections.values()) {
@@ -157,7 +193,6 @@ class FlowlyCore {
             }
         }
 
-        // Verificação de Limite da Porta de Entrada
         if (targetPort.limit !== Infinity) {
             let inputConnectionsCount = 0;
             for (const conn of this.connections.values()) {
@@ -197,6 +232,11 @@ class FlowlyCore {
         return newConnection;
     }
 
+    /**
+     * Removes a connection by id.
+     * @param {string} connectionId
+     * @returns {boolean}
+     */
     removeConnection(connectionId) {
         if (this.isReadOnlyGlobal) {
             console.warn("Flowly is in read-only mode. Cannot remove connection.");
@@ -216,6 +256,11 @@ class FlowlyCore {
         return false;
     }
 
+    /**
+     * Gets incoming and outgoing connections for a node.
+     * @param {string} nodeId
+     * @returns {{inputs: Connection[], outputs: Connection[]}}
+     */
     getConnections(nodeId) {
         const inputs = [];
         const outputs = [];
@@ -226,6 +271,11 @@ class FlowlyCore {
         return { inputs, outputs };
     }
 
+    /**
+     * Gets a node by id enriched with its connections.
+     * @param {string} nodeId
+     * @returns {(Node & {connections: {inputs: Connection[], outputs: Connection[]}}) | undefined}
+     */
     getNode(nodeId) {
         const node = this.nodes.get(nodeId);
         if (node) {
@@ -239,6 +289,10 @@ class FlowlyCore {
         return undefined;
     }
 
+    /**
+     * Gets all nodes enriched with their connections.
+     * @returns {Array<Node & {connections: {inputs: Connection[], outputs: Connection[]}}>} 
+     */
     getNodes() {
         const allNodes = Array.from(this.nodes.values());
         return allNodes.map(node => {
@@ -250,19 +304,32 @@ class FlowlyCore {
         });
     }
 
+    /**
+     * Returns all connections.
+     * @returns {Connection[]}
+     */
     getAllConnections() {
         return Array.from(this.connections.values());
     }
 
-    // --- MÉTODOS UTILITÁRIOS ---
     getById(nodeId) {
         return this.getNode(nodeId);
     }
 
+    /**
+     * Returns all nodes enriched with their connections.
+     * @returns {Array<Node & {connections: {inputs: Connection[], outputs: Connection[]}}>} 
+     */
     getAllNodes() {
         return this.getNodes();
     }
 
+    /**
+     * Updates node properties.
+     * @param {string} nodeId
+     * @param {{name?: string, data?: Object, input?: Object, output?: Object, x?: number, y?: number, htmlContent?: string|null, showHeader?: boolean}} newData
+     * @returns {boolean}
+     */
     updateNode(nodeId, newData) {
         const node = this.nodes.get(nodeId);
         if (this.isReadOnlyGlobal || (node && node.readOnly)) {
@@ -287,6 +354,10 @@ class FlowlyCore {
         return true;
     }
 
+    /**
+     * Serializes the flow to JSON string.
+     * @returns {string}
+     */
     toJSON() {
         return JSON.stringify({
             nodes: Array.from(this.nodes.values()).map(node => ({
@@ -305,6 +376,11 @@ class FlowlyCore {
         });
     }
 
+    /**
+     * Loads flow from JSON object or string.
+     * @param {string|{nodes:any[], connections:any[]}} json
+     * @returns {void}
+     */
     fromJSON(json) {
         let obj = json;
         if (typeof json === 'string') {
@@ -329,6 +405,12 @@ class FlowlyCore {
         this.eventEmitter.emit('flowLoaded');
     }
 
+    /**
+     * Updates a connection label HTML content.
+     * @param {string} connectionId
+     * @param {string|null} labelHtmlContent
+     * @returns {boolean}
+     */
     updateConnectionLabel(connectionId, labelHtmlContent) {
         if (this.isReadOnlyGlobal) {
             console.warn("Flowly is in read-only mode. Cannot update connection label.");
@@ -337,7 +419,6 @@ class FlowlyCore {
         const connection = this.connections.get(connectionId);
         if (connection) {
             connection.labelHtmlContent = labelHtmlContent;
-            // Dispara um evento para notificar a UI sobre a mudança no label
             const sourceNode = this.getNode(connection.sourceNodeId);
             const targetNode = this.getNode(connection.targetNodeId);
             this.eventEmitter.emit('connectionLabelChanged', { connection, sourceNode, targetNode });
@@ -347,6 +428,11 @@ class FlowlyCore {
         return false;
     }
 
+    /**
+     * Returns neighbors connected to the given node (both incoming and outgoing).
+     * @param {string} nodeId
+     * @returns {Array<Node & {connections: {inputs: Connection[], outputs: Connection[]}}>} 
+     */
     getConnectedNodes(nodeId) {
         const targetNode = this.nodes.get(nodeId);
         if (!targetNode) {
@@ -355,27 +441,24 @@ class FlowlyCore {
         }
 
         const connectedNodeIds = new Set();
-        const nodeConnections = this.getConnections(nodeId); // Isso retorna { inputs: Connection[], outputs: Connection[] }
+        const nodeConnections = this.getConnections(nodeId);
 
-        // Para cada conexão de ENTRADA no nó especificado, o nó conectado é o NÓ DE ORIGEM da conexão.
         if (nodeConnections && nodeConnections.inputs) {
             nodeConnections.inputs.forEach(conn => {
-                if (conn.sourceNodeId !== nodeId) { // Evitar auto-conexões se existissem
+                if (conn.sourceNodeId !== nodeId) {
                     connectedNodeIds.add(conn.sourceNodeId);
                 }
             });
         }
 
-        // Para cada conexão de SAÍDA do nó especificado, o nó conectado é o NÓ DE DESTINO da conexão.
         if (nodeConnections && nodeConnections.outputs) {
             nodeConnections.outputs.forEach(conn => {
-                if (conn.targetNodeId !== nodeId) { // Evitar auto-conexões se existissem
+                if (conn.targetNodeId !== nodeId) {
                     connectedNodeIds.add(conn.targetNodeId);
                 }
             });
         }
 
-        // Converter os IDs de volta para objetos de nó completos (incluindo suas próprias conexões, etc.)
         return Array.from(connectedNodeIds).map(id => this.getNode(id)).filter(node => node !== undefined);
     }
 }

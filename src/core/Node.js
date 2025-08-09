@@ -1,4 +1,25 @@
+/**
+ * @typedef {Object} FlowlyPort
+ * @property {string} id
+ * @property {string} name
+ * @property {number} limit
+ */
+
+/**
+ * Represents a node in the Flowly graph.
+ */
 class Node {
+    /**
+     * @param {string} id
+     * @param {number} x
+     * @param {number} y
+     * @param {Object} [data]
+     * @param {FlowlyPort|null} [input]
+     * @param {FlowlyPort|null} [output]
+     * @param {string|null} [htmlContent]
+     * @param {boolean} [showHeader]
+     * @param {boolean} [readOnly]
+     */
     constructor(id, x, y, data = {}, input = null, output = null, htmlContent = null, showHeader = true, readOnly = false) {
         this.id = id;
         this.x = x;
@@ -7,7 +28,7 @@ class Node {
         this.htmlContent = htmlContent;
         this.showHeader = showHeader;
         this.readOnly = !!readOnly;
-        
+
         this.input = input ? {
             ...input,
             id: input.id || 'input',
@@ -23,11 +44,22 @@ class Node {
         } : null;
     }
 
+    /**
+     * Updates this node's position.
+     * @param {number} x
+     * @param {number} y
+     * @returns {void}
+     */
     setPosition(x, y) {
         this.x = x;
         this.y = y;
     }
 
+    /**
+     * Sets the custom HTML content for this node.
+     * @param {string|null} newHtmlContent
+     * @returns {void}
+     */
     setHtmlContent(newHtmlContent) {
         this.htmlContent = newHtmlContent;
     }

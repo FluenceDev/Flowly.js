@@ -1,7 +1,14 @@
-// src/ui/vanilla/NodeUI.js
 import interact from 'interactjs';
 
 class NodeUI {
+    /**
+     * @param {*} node
+     * @param {HTMLElement} containerElement
+     * @param {*} core
+     * @param {() => {x:number,y:number,zoom:number}} getCanvasOffsetAndZoomFunction
+     * @param {*} parentUI
+     * @param {boolean} isReadOnlyGlobal
+     */
     constructor(node, containerElement, core, getCanvasOffsetAndZoomFunction, parentUI, isReadOnlyGlobal) {
         this.node = node;
         this.containerElement = containerElement;
@@ -23,6 +30,10 @@ class NodeUI {
         });
     }
 
+    /**
+     * Creates HTML element for a node card.
+     * @returns {HTMLDivElement}
+     */
     createNodeElement() {
         const nodeDiv = document.createElement('div');
         nodeDiv.classList.add('flowly-node');
@@ -85,11 +96,17 @@ class NodeUI {
         return nodeDiv;
     }
 
+    /**
+     * Appends element to container and updates initial position.
+     */
     render() {
         this.containerElement.appendChild(this.element);
         this.updatePosition();
     }
 
+    /**
+     * Updates element transform based on world position and zoom.
+     */
     updatePosition() {
         const { x: offsetX, y: offsetY, zoom } = this.getCanvasOffsetAndZoom();
 
@@ -99,6 +116,9 @@ class NodeUI {
         this.element.style.transform = `translate(${screenX}px, ${screenY}px) scale(${zoom})`;
     }
 
+    /**
+     * Enables drag interactions for node.
+     */
     initializeDraggable() {
         if (!this.element) {
             console.error("NodeUI element not found for dragging.");
@@ -110,7 +130,7 @@ class NodeUI {
                 preventDefault: 'auto',
                 ignoreFrom: '.flowly-node-port, .flowly-node-custom-content-wrapper *',
                 listeners: {
-                    start: (event) => {
+                    start: () => {
                         this.element.classList.add('flowly-node-dragging');
                     },
                     move: (event) => {
@@ -120,13 +140,16 @@ class NodeUI {
                         this.core.updateNodePosition(this.node.id, this.node.x, this.node.y);
                         this.updatePosition();
                     },
-                    end: (event) => {
+                    end: () => {
                         this.element.classList.remove('flowly-node-dragging');
                     }
                 }
             });
     }
 
+    /**
+     * Enables or disables dragging based on read-only state.
+     */
     updateDraggableStatus() {
         if (!this.element) return;
 

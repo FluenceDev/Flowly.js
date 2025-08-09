@@ -24,7 +24,15 @@ const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.0;
 const PASTE_OFFSET = 20;
 
+/**
+ * Vanilla DOM-based UI for Flowly.
+ */
 class FlowlyVanillaUI {
+    /**
+     * @param {string} containerId
+     * @param {*} core
+     * @param {{readOnly?: boolean, background?: {type?: 'solid'|'dots', color?: string, dotColor?: string, dotSize?: number, dotSpacing?: number}}} [initialConfig]
+     */
     constructor(containerId, core, initialConfig = {}) {
         this.container = document.getElementById(containerId);
         if (!this.container) {
@@ -82,6 +90,10 @@ class FlowlyVanillaUI {
         this.updateBackgroundPattern();
     }
 
+    /**
+     * Creates the SVG container used to draw connections.
+     * @returns {SVGSVGElement}
+     */
     createSvgContainer() {
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, 'svg');
@@ -95,6 +107,10 @@ class FlowlyVanillaUI {
         return svg;
     }
 
+    /**
+     * Hooks UI updates to core events.
+     * @returns {void}
+     */
     setupCoreListeners() {
         this.core.onNodeAdded = (node) => this.addNodeUI(node);
         this.core.onNodeRemoved = (nodeId) => this.removeNodeUI(nodeId);
@@ -122,11 +138,19 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Adds UI element for a node.
+     * @param {*} node
+     */
     addNodeUI(node) {
         const nodeUI = new NodeUI(node, this.container, this.core, this.getCanvasOffsetAndZoom.bind(this), this, this.isReadOnlyGlobal);
         this.nodeUIs.set(node.id, nodeUI);
     }
 
+    /**
+     * Removes UI element for a node id.
+     * @param {string} nodeId
+     */
     removeNodeUI(nodeId) {
         const nodeUI = this.nodeUIs.get(nodeId);
         if (nodeUI && nodeUI.element.parentNode) {
@@ -138,6 +162,10 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Recomputes connection paths for a node.
+     * @param {string} nodeId
+     */
     updateConnectionsForNode(nodeId) {
         this.connectionUIs.forEach(connUI => {
             if (connUI && connUI.connection) {
@@ -149,6 +177,10 @@ class FlowlyVanillaUI {
         });
     }
 
+    /**
+     * Updates the on-screen position for a node UI.
+     * @param {*} node
+     */
     updateNodeUIPosition(node) {
         const nodeUI = this.nodeUIs.get(node.id);
         if (nodeUI) {
@@ -156,6 +188,10 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Adds UI for a connection.
+     * @param {*} connection
+     */
     addConnectionUI(connection) {
         const connectionUI = new ConnectionUI(
             connection, 
@@ -169,6 +205,10 @@ class FlowlyVanillaUI {
         this.connectionUIs.set(connection.id, connectionUI);
     }
 
+    /**
+     * Removes UI for a connection.
+     * @param {*} connection
+     */
     removeConnectionUI(connection) {
         const connectionUI = this.connectionUIs.get(connection.id);
         if (connectionUI) {
@@ -180,6 +220,13 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Finds the world-space position for a node port.
+     * @param {string} nodeId
+     * @param {string} portId
+     * @param {'input'|'output'} portType
+     * @returns {{x:number,y:number}|null}
+     */
     getPortWorldPosition(nodeId, portId, portType) {
         const nodeUI = this.nodeUIs.get(nodeId);
         if (!nodeUI) {
@@ -200,6 +247,12 @@ class FlowlyVanillaUI {
         };
     }
 
+    /**
+     * Builds a simple cubic bezier path between two points.
+     * @param {{x:number,y:number}} start
+     * @param {{x:number,y:number}} end
+     * @returns {string}
+     */
     getSimpleBezierPath(start, end) {
         const scaledBezierOffset = BEZIER_HANDLE_OFFSET * this.zoom;
 
@@ -212,10 +265,20 @@ class FlowlyVanillaUI {
         return `M ${start.x} ${start.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${end.x} ${end.y}`;
     }
 
+    /**
+     * Returns current canvas offset and zoom.
+     * @returns {{x:number,y:number,zoom:number}}
+     */
     getCanvasOffsetAndZoom() {
         return { x: this.canvasOffsetX, y: this.canvasOffsetY, zoom: this.zoom };
     }
 
+    /**
+     * Applies zoom centered at given container coordinates.
+     * @param {number} newZoom
+     * @param {number} centerX
+     * @param {number} centerY
+     */
     applyZoom(newZoom, centerX, centerY) {
         const oldZoom = this.zoom;
         const clampedNewZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
@@ -235,12 +298,19 @@ class FlowlyVanillaUI {
         this.updateAllVisuals();
     }
 
+    /**
+     * Re-renders visuals for nodes, connections and background.
+     * @returns {void}
+     */
     updateAllVisuals() {
         this.nodeUIs.forEach(nodeUI => nodeUI.updatePosition());
         this.connectionUIs.forEach(connUI => connUI.updateLinePosition());
         this.updateBackgroundPattern();
     }
 
+    /**
+     * Clears node selection state.
+     */
     clearNodeSelection() {
         if (this.selectedNodeId) {
             const nodeUI = this.nodeUIs.get(this.selectedNodeId);
@@ -251,6 +321,10 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Selects a node by id.
+     * @param {string} nodeId
+     */
     selectNode(nodeId) {
         this.clearNodeSelection();
         this.clearConnectionSelection();
@@ -262,6 +336,9 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Clears connection selection state.
+     */
     clearConnectionSelection() {
         if (this.selectedConnectionId) {
             const connUI = this.connectionUIs.get(this.selectedConnectionId);
@@ -272,6 +349,10 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Selects a connection by id.
+     * @param {string} connectionId
+     */
     selectConnection(connectionId) {
         this.clearNodeSelection();
         this.clearConnectionSelection();
@@ -283,6 +364,9 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Sets up pointer interactions for pan and connection drawing.
+     */
     setupInteractions() {
         this.tempLine = null;
         this.currentConnectionStart = null;
@@ -319,9 +403,7 @@ class FlowlyVanillaUI {
                 !clickedNodeElement
             ) {
                 if (!clickedNodeElement && !target.classList.contains(CSS_CLASSES.PORT) && !target.closest(`.${CSS_CLASSES.CONNECTION}`) && !clickedLabelElement) {
-                    // Se o clique foi no canvas vazio, permitir pan mesmo em read-only global
                 } else {
-                    // return; // Retornar aqui pode ser muito agressivo, desabilitando seleção em RO global.
                 }
             }
 
@@ -491,7 +573,7 @@ class FlowlyVanillaUI {
                     }
                     const sourceNodeCore = this.core.getById(this.currentConnectionStart.sourceNodeId);
                     if (sourceNodeCore && sourceNodeCore.readOnly) {
-                         console.warn(`Source Node ${sourceNodeCore.id} is read-only. Cannot complete connection.`);
+                        console.warn(`Source Node ${sourceNodeCore.id} is read-only. Cannot complete connection.`);
                         if (this.tempLine && this.tempLine.parentNode) {
                             this.tempLine.parentNode.removeChild(this.tempLine);
                             this.tempLine = null;
@@ -539,6 +621,9 @@ class FlowlyVanillaUI {
         });
     }
 
+    /**
+     * Sets up wheel-zoom interactions.
+     */
     setupZoomInteractions() {
         this.container.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -558,6 +643,9 @@ class FlowlyVanillaUI {
         }, { passive: false });
     }
 
+    /**
+     * Sets up copy/paste and delete keyboard interactions.
+     */
     setupKeyboardInteractions() {
         document.addEventListener('keydown', (e) => {
             if (this.isReadOnlyGlobal) {
@@ -641,6 +729,9 @@ class FlowlyVanillaUI {
         });
     }
 
+    /**
+     * Tracks last mouse position to support paste near cursor.
+     */
     setupMouseTracking() {
         this.container.addEventListener('mousemove', (e) => {
             this.lastMouseX = e.clientX;
@@ -648,6 +739,10 @@ class FlowlyVanillaUI {
         });
     }
 
+    /**
+     * Calculates distance between two touch pointers.
+     * @returns {number|null}
+     */
     getPinchDistance() {
         if (this.pointers.size !== 2) return null;
         const [p1Id, p2Id] = Array.from(this.pointers.keys());
@@ -656,6 +751,9 @@ class FlowlyVanillaUI {
         return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
     }
 
+    /**
+     * Renders nodes and connections currently present in core.
+     */
     renderInitial() {
         this.core.getAllNodes().forEach(node => this.addNodeUI(node));
         requestAnimationFrame(() => {
@@ -663,6 +761,10 @@ class FlowlyVanillaUI {
         });
     }
 
+    /**
+     * Sets background rendering options.
+     * @param {{type?: 'solid'|'dots', color?: string, dotColor?: string, dotSize?: number, dotSpacing?: number}} [options]
+     */
     setBackground(options = {}) {
         const defaults = {
             type: 'solid',
@@ -687,6 +789,9 @@ class FlowlyVanillaUI {
         this.updateBackgroundPattern();
     }
 
+    /**
+     * Updates background pattern to reflect zoom/offset.
+     */
     updateBackgroundPattern() {
         if (this.backgroundOptions.type === 'dots') {
             const scaledDotSize = Math.max(0.5, this.backgroundOptions.dotSize * this.zoom);
@@ -707,6 +812,10 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Notifies subscribers about node double-click.
+     * @param {string} nodeId
+     */
     notifyNodeDoubleClick(nodeId) {
         if (this.core && this.core.eventEmitter) {
             const node = this.core.getById(nodeId);
@@ -716,12 +825,19 @@ class FlowlyVanillaUI {
         }
     }
 
+    /**
+     * Notifies subscribers about connection label double-click.
+     * @param {string} connectionId
+     */
     notifyConnectionLabelDoubleClick(connectionId) {
         if (this.core && this.core.eventEmitter) {
             this.core.eventEmitter.emit('connectionLabelDoubleClick', connectionId);
         }
     }
 
+    /**
+     * Removes all UI elements for nodes and connections.
+     */
     clearAllUI() {
         this.nodeUIs.forEach(nodeUI => {
             if (nodeUI.element && nodeUI.element.parentNode) {
@@ -736,6 +852,10 @@ class FlowlyVanillaUI {
         this.connectionUIs.clear();
     }
 
+    /**
+     * Sets global read-only mode for UI and updates interactability.
+     * @param {boolean} isReadOnly
+     */
     setReadOnly(isReadOnly) {
         this.isReadOnlyGlobal = !!isReadOnly;
 
@@ -753,7 +873,6 @@ class FlowlyVanillaUI {
             }
             this.container.classList.remove('panning');
         } else {
-            // Lógica para quando sai do modo read-only, se necessário.
         }
     }
 }

@@ -1,8 +1,11 @@
-// src/main.js
 import FlowlyCore from './core/Flowly';
 import FlowlyVanillaUI from './ui/vanilla';
 
 class Flowly {
+    /**
+     * @param {string} containerId
+     * @param {{readOnly?: boolean, background?: any}} [options]
+     */
     constructor(containerId, options = {}) {
         this.core = new FlowlyCore();
         this.ui = new FlowlyVanillaUI(containerId, this.core, options);
@@ -10,6 +13,11 @@ class Flowly {
         this.ui.renderInitial();
     }
 
+    /**
+     * Sets global read-only state.
+     * @param {boolean} isReadOnly
+     * @returns {this}
+     */
     setReadOnly(isReadOnly) {
         const readOnlyState = !!isReadOnly;
         this.core.setGlobalReadOnly(readOnlyState);
@@ -19,6 +27,12 @@ class Flowly {
         return this;
     }
 
+    /**
+     * Subscribes to a Flowly event.
+     * @param {string} eventName
+     * @param {Function} listener
+     * @returns {this}
+     */
     on(eventName, listener) {
         if (this.core && this.core.eventEmitter) {
             this.core.eventEmitter.on(eventName, listener);
@@ -28,6 +42,12 @@ class Flowly {
         return this;
     }
 
+    /**
+     * Unsubscribes a listener from an event.
+     * @param {string} eventName
+     * @param {Function} listener
+     * @returns {this}
+     */
     off(eventName, listener) {
         if (this.core && this.core.eventEmitter) {
             this.core.eventEmitter.off(eventName, listener);
@@ -37,13 +57,22 @@ class Flowly {
         return this;
     }
 
+    /**
+     * Applies CSS variables to the document root.
+     * @param {Record<string,string>} themeObj
+     * @returns {void}
+     */
     setTheme(themeObj) {
-        // Aplica as variáveis CSS no :root
         for (const key in themeObj) {
             document.documentElement.style.setProperty(key, themeObj[key]);
         }
     }
 
+    /**
+     * Sets the background options for the UI.
+     * @param {any} options
+     * @returns {void}
+     */
     setBackground(options) {
         if (this.ui && typeof this.ui.setBackground === 'function') {
             this.ui.setBackground(options);
@@ -52,34 +81,68 @@ class Flowly {
         }
     }
 
+    /**
+     * Adds a node using the core engine.
+     * @param {any} config
+     * @returns {import('./core/Node').default|null}
+     */
     addNode(config) {
         return this.core.addNode(config);
     }
 
+    /**
+     * Removes a node by id.
+     * @param {string} nodeId
+     * @returns {boolean}
+     */
     removeNode(nodeId) {
         return this.core.removeNode(nodeId);
     }
 
+    /**
+     * Gets a node by id with connections.
+     * @param {string} nodeId
+     */
     getById(nodeId) {
         return this.core.getById(nodeId);
     }
 
+    /**
+     * Returns all nodes with connections.
+     */
     getAllNodes() {
         return this.core.getAllNodes();
     }
 
+    /**
+     * Returns incoming and outgoing connections for a node id.
+     * @param {string} nodeId
+     */
     getConnections(nodeId) {
         return this.core.getConnections(nodeId);
     }
 
+    /**
+     * Returns neighboring nodes connected to a node id.
+     * @param {string} nodeId
+     */
     getConnectedNodes(nodeId) {
         return this.core.getConnectedNodes(nodeId);
     }
 
+    /**
+     * Returns all connections.
+     */
     getAllConnections() {
         return this.core.getAllConnections();
     }
 
+    /**
+     * Updates a node and re-renders UI if needed.
+     * @param {string} nodeId
+     * @param {any} newData
+     * @returns {boolean}
+     */
     updateNode(nodeId, newData) {
         const result = this.core.updateNode(nodeId, newData);
 
@@ -98,18 +161,21 @@ class Flowly {
         return result;
     }
 
+    /**
+     * Adds a connection. Supports overloaded signatures.
+     * @returns {import('./core/Connection').default|null}
+     */
     addConnection(...args) {
         let sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent = null;
 
         if (args.length === 2 || (args.length === 3 && typeof args[2] === 'string')) {
-            // Assinatura: (sourceNodeId, targetNodeId, optionalLabelHtmlContent)
             sourceNodeId = args[0];
             targetNodeId = args[1];
             if (args.length === 3) {
                 labelHtmlContent = args[2];
             }
 
-            const sourceNode = this.core.getNode(sourceNodeId); // getNode do core retorna o nó com suas props
+            const sourceNode = this.core.getNode(sourceNodeId);
             const targetNode = this.core.getNode(targetNodeId);
 
             if (!sourceNode) {
@@ -134,7 +200,6 @@ class Flowly {
             targetInputId = `${targetNodeId}-${targetNode.input.id}`;
 
         } else if (args.length === 4 || args.length === 5) {
-            // Assinatura: (sourceNodeId, sourceOutputId, targetNodeId, targetInputId, optionalLabelHtmlContent)
             sourceNodeId = args[0];
             sourceOutputId = args[1];
             targetNodeId = args[2];
@@ -150,18 +215,37 @@ class Flowly {
         return this.core.addConnection(sourceNodeId, sourceOutputId, targetNodeId, targetInputId, labelHtmlContent);
     }
 
+    /**
+     * Removes a connection by id.
+     * @param {string} connectionId
+     * @returns {boolean}
+     */
     removeConnection(connectionId) {
         return this.core.removeConnection(connectionId);
     }
 
+    /**
+     * Updates a connection label HTML.
+     * @param {string} connectionId
+     * @param {string|null} labelHtmlContent
+     * @returns {boolean}
+     */
     addLabelToConnection(connectionId, labelHtmlContent) {
         return this.core.updateConnectionLabel(connectionId, labelHtmlContent);
     }
 
+    /**
+     * Serializes current flow.
+     * @returns {string}
+     */
     toJSON() {
         return this.core.toJSON();
     }
 
+    /**
+     * Loads flow from JSON.
+     * @param {string|Object} json
+     */
     fromJSON(json) {
         this.core.fromJSON(json);
     }

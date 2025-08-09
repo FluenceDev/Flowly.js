@@ -1,5 +1,13 @@
-// src/ui/vanilla/ConnectionUI.js
 class ConnectionUI {
+    /**
+     * @param {*} connection
+     * @param {SVGSVGElement} svgContainer
+     * @param {HTMLElement} htmlContainer
+     * @param {(nodeId:string,portId:string,portType:'input'|'output')=>{x:number,y:number}|null} getPortWorldPositionFunction
+     * @param {(start:{x:number,y:number}, end:{x:number,y:number})=>string} getSimpleBezierPathFunction
+     * @param {() => {x:number,y:number,zoom:number}} getCanvasOffsetAndZoomFunction
+     * @param {*} [parentUI]
+     */
     constructor(connection, svgContainer, htmlContainer, getPortWorldPositionFunction, getSimpleBezierPathFunction, getCanvasOffsetAndZoomFunction, parentUI = null) {
         this.connection = connection;
         this.svgContainer = svgContainer;
@@ -28,6 +36,10 @@ class ConnectionUI {
         });
     }
 
+    /**
+     * Creates a positioned HTML overlay for the label.
+     * @returns {HTMLDivElement}
+     */
     createLabelElement() {
         const div = document.createElement('div');
         div.classList.add('flowly-connection-label');
@@ -47,6 +59,10 @@ class ConnectionUI {
         return div;
     }
 
+    /**
+     * Updates the label element for this connection.
+     * @param {string|null} newLabelHtmlContent
+     */
     updateLabel(newLabelHtmlContent) {
         this.connection.labelHtmlContent = newLabelHtmlContent;
 
@@ -67,6 +83,10 @@ class ConnectionUI {
         this.updateLinePosition();
     }
 
+    /**
+     * Creates a wide transparent SVG path used for pointer interactions.
+     * @returns {SVGPathElement}
+     */
     createHitboxElement() {
         const svgNS = "http://www.w3.org/2000/svg";
         const hitbox = document.createElementNS(svgNS, 'path');
@@ -79,6 +99,10 @@ class ConnectionUI {
         return hitbox;
     }
 
+    /**
+     * Creates the visible SVG path for the connection line.
+     * @returns {SVGPathElement}
+     */
     createLineElement() {
         const svgNS = "http://www.w3.org/2000/svg";
         const path = document.createElementNS(svgNS, 'path');
@@ -91,6 +115,9 @@ class ConnectionUI {
         return path;
     }
 
+    /**
+     * Appends elements to containers and positions the line.
+     */
     render() {
         this.svgContainer.appendChild(this.hitboxElement);
         this.svgContainer.appendChild(this.lineElement);
@@ -100,6 +127,9 @@ class ConnectionUI {
         this.updateLinePosition();
     }
 
+    /**
+     * Recomputes the line path and label position using current port positions.
+     */
     updateLinePosition() {
         const sourcePos = this.getPortWorldPosition(
             this.connection.sourceNodeId,
@@ -147,6 +177,9 @@ class ConnectionUI {
         }
     }
 
+    /**
+     * Removes all DOM elements associated with this connection.
+     */
     remove() {
         if (this.lineElement.parentNode) {
             this.lineElement.parentNode.removeChild(this.lineElement);
